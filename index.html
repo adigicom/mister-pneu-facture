@@ -421,62 +421,57 @@ function generateAndShow(){
 
 async function downloadPDF(){
   const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
-  const win=isIOS?window.open('','_blank'):null;
-  if(win){
-    win.document.open();
-    win.document.write('<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Facture PDF</title><style>body{margin:0;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;}p{color:white;font-size:15px;padding:20px;text-align:center;}</style></head><body><p>⏳ Génération en cours…<br>Quelques secondes, patientez.</p></body></html>');
-    win.document.close();
+  if(isIOS){
+    // iOS : impression native → enregistrer en PDF dans Fichiers
+    window.print();
+    return;
   }
+  // Desktop : html2canvas + jsPDF
   const {jsPDF}=window.jspdf;
   const el=document.getElementById('invoicePreview');
-  const sc=isIOS?1.5:2;
-  try {
-    const canvas=await html2canvas(el,{scale:sc,useCORS:true,backgroundColor:'#ffffff',logging:false});
-    const imgData=canvas.toDataURL('image/jpeg',0.90);
-    const pdf=new jsPDF({orientation:'portrait',unit:'px',format:[canvas.width,canvas.height]});
-    pdf.addImage(imgData,'JPEG',0,0,canvas.width,canvas.height);
-    const num=document.getElementById('inv-numero').textContent||'facture';
-    if(isIOS){
-      const blob=pdf.output('blob');
-      const burl=URL.createObjectURL(blob);
-      win.location.href=burl;
-      setTimeout(()=>URL.revokeObjectURL(burl),30000);
-    } else {
-      pdf.save(num+'.pdf');
-    }
-  } catch(e) {
-    if(win) win.document.write('<p style="color:red;padding:20px;font-family:sans-serif">Erreur : '+e.message+'</p>');
-  }
+  const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+  const imgData=canvas.toDataURL('image/jpeg',0.95);
+  const pdf=new jsPDF({orientation:'portrait',unit:'px',format:[canvas.width,canvas.height]});
+  pdf.addImage(imgData,'JPEG',0,0,canvas.width,canvas.height);
+  const num=document.getElementById('inv-numero').textContent||'facture';
+  pdf.save(num+'.pdf');
 }
 
 async function downloadJPG(){
   const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
-  const win=isIOS?window.open('','_blank'):null;
-  if(win){
-    win.document.open();
-    win.document.write('<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Facture</title><style>body{margin:0;background:#111;font-family:sans-serif;text-align:center;padding:16px;}p{color:white;font-size:14px;margin:12px 0;}</style></head><body><p>⏳ Génération en cours…</p></body></html>');
-    win.document.close();
-  }
   const el=document.getElementById('invoicePreview');
-  const sc=isIOS?1.5:2;
-  try {
-    const canvas=await html2canvas(el,{scale:sc,useCORS:true,backgroundColor:'#ffffff',logging:false});
-    const num=document.getElementById('inv-numero').textContent||'facture';
-    const dataURL=canvas.toDataURL('image/jpeg',isIOS?0.85:0.92);
-    if(isIOS){
-      // Écrire l'image dans le nouvel onglet → appui long pour sauvegarder
+
+  if(isIOS){
+    // iOS : ouvrir fenêtre AVANT l'async
+    const win=window.open('','_blank');
+    if(win){
       win.document.open();
-      win.document.write('<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Facture</title><style>body{margin:0;background:#111;display:flex;flex-direction:column;align-items:center;padding:12px;}img{max-width:100%;border-radius:4px;}p{color:white;font-family:sans-serif;font-size:13px;text-align:center;margin:10px 0;}</style></head><body><p>📱 Appuyez longuement sur l\'image → <strong style="color:#4af">Ajouter à Photos</strong></p><img src="'+dataURL+'" /><p style="color:#888;font-size:11px;margin-top:8px;">Ou utilisez le bouton Partager ↑ pour enregistrer</p></body></html>');
+      win.document.write('<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Facture</title><style>body{margin:0;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;}p{color:white;font-size:14px;padding:16px;text-align:center;}</style></head><body><p>⏳ Génération…</p></body></html>');
       win.document.close();
-    } else {
-      const link=document.createElement('a');
-      link.download=num+'.jpg';
-      link.href=dataURL;
-      link.click();
     }
-  } catch(e) {
-    if(win) win.document.write('<p style="color:red;padding:20px;font-family:sans-serif">Erreur : '+e.message+'</p>');
+    try{
+      // Scale 1 sur iOS pour éviter crash mémoire
+      const canvas=await html2canvas(el,{scale:1,useCORS:true,backgroundColor:'#ffffff',logging:false,imageTimeout:0});
+      const dataURL=canvas.toDataURL('image/jpeg',0.80);
+      if(win){
+        win.document.open();
+        win.document.write('<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>Facture</title><style>*{box-sizing:border-box;}body{margin:0;background:#000;display:flex;flex-direction:column;align-items:center;padding:12px;font-family:sans-serif;}img{max-width:100%;border-radius:6px;display:block;}p{color:white;font-size:13px;text-align:center;margin:10px 0;}.tip{background:#1a1a1a;border-radius:8px;padding:10px 14px;color:#ccc;font-size:12px;margin-top:8px;}</style></head><body><p style="font-size:15px;font-weight:bold;">📸 Votre facture</p><img src="'+dataURL+'" /><div class="tip">📱 Appuyez <strong>longuement</strong> sur l\'image<br>→ <span style="color:#4af">Ajouter à Photos</span><br><br>Ou appuyez sur ↑ Partager → Enregistrer l\'image</div></body></html>');
+        win.document.close();
+      }
+    }catch(e){
+      if(win)win.document.write('<p style="color:red;padding:20px;font-family:sans-serif">Erreur : '+e.message+'</p>');
+    }
+    return;
   }
+
+  // Desktop
+  const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+  const num=document.getElementById('inv-numero').textContent||'facture';
+  const dataURL=canvas.toDataURL('image/jpeg',0.92);
+  const link=document.createElement('a');
+  link.download=num+'.jpg';
+  link.href=dataURL;
+  link.click();
 }
 
 function newInvoice(){
