@@ -424,7 +424,8 @@ async function downloadJPG() {
   const dataURL = canvas.toDataURL('image/jpeg', 0.92);
 
   if (isIOS) {
-    win.document.body.innerHTML = `<img src="${dataURL}" style="max-width:100%;display:block;margin:auto" /><p style="font-family:sans-serif;text-align:center;color:#555;padding:10px">Appuyez longuement sur l'image → Enregistrer</p>`;
+    // Sur iOS Safari : ouvrir l'image directement → appui long → "Ajouter à Photos"
+    win.location.href = dataURL;
   } else {
     const link = document.createElement('a');
     link.download = `${num}.jpg`;
