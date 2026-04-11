@@ -181,7 +181,9 @@ body { font-family: Arial, sans-serif; background: #e8e8e8; min-height: 100vh; }
 .inv-legal-bar  { background: #2b2b2b; color: #bbb; text-align: center; font-size: 10.5px; padding: 12px 20px; line-height: 1.8; }
 
 /* ══ PRINT ══ */
+@page { size: A4 portrait; margin: 0; }
 @media print {
+  html { zoom: 0.82; }
   body { background: white; }
   .form-ui, #downloadSection { display: none !important; }
   .invoice-preview {
@@ -189,6 +191,8 @@ body { font-family: Arial, sans-serif; background: #e8e8e8; min-height: 100vh; }
     box-shadow: none;
     margin: 0;
     width: 100%;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 }
 </style>
