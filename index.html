@@ -424,21 +424,25 @@ function generateAndShow(){
 }
 
 async function downloadPDF(){
-  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
-  if(isIOS){
-    // iOS : impression native → enregistrer en PDF dans Fichiers
+  const isMobile=/iPad|iPhone|iPod|Android/i.test(navigator.userAgent)&&!window.MSStream;
+  if(isMobile){
+    // Mobile (iOS + Android) : impression native → enregistrer en PDF
     window.print();
     return;
   }
   // Desktop : html2canvas + jsPDF
-  const {jsPDF}=window.jspdf;
-  const el=document.getElementById('invoicePreview');
-  const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
-  const imgData=canvas.toDataURL('image/jpeg',0.95);
-  const pdf=new jsPDF({orientation:'portrait',unit:'px',format:[canvas.width,canvas.height]});
-  pdf.addImage(imgData,'JPEG',0,0,canvas.width,canvas.height);
-  const num=document.getElementById('inv-numero').textContent||'facture';
-  pdf.save(num+'.pdf');
+  try{
+    const {jsPDF}=window.jspdf;
+    const el=document.getElementById('invoicePreview');
+    const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+    const imgData=canvas.toDataURL('image/jpeg',0.95);
+    const pdf=new jsPDF({orientation:'portrait',unit:'px',format:[canvas.width,canvas.height]});
+    pdf.addImage(imgData,'JPEG',0,0,canvas.width,canvas.height);
+    const num=document.getElementById('inv-numero').textContent||'facture';
+    pdf.save(num+'.pdf');
+  }catch(e){
+    alert('Erreur PDF : '+e.message+'\nEssaie le bouton JPG à la place.');
+  }
 }
 
 async function downloadJPG(){
